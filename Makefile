@@ -6,6 +6,7 @@ $(VIRTUALENV)/.installed: requirements.txt
 	@mkdir -p $(VIRTUALENV)
 	virtualenv --python python3 $(VIRTUALENV)
 	$(VIRTUALENV)/bin/pip3 install -r requirements.txt
+	$(VIRTUALENV)/bin/python setup.py install
 	touch $@
 
 .PHONY: virtualenv
