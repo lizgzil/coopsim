@@ -1,11 +1,6 @@
 import numpy as np
 from numpy import random
 
-import matplotlib.pyplot as plt
-from matplotlib import colors
-from matplotlib.colors import LinearSegmentedColormap
-import matplotlib.animation as animation
-
 class PrisonersDilemma:
 
     """
@@ -19,7 +14,7 @@ class PrisonersDilemma:
         grid_len: (int) Number of pixels in game grid
         init_coop: (0-1) Initial proportion of cooperators
         num_iterations: (int) Number of iterations of the game
-        special_init: (bool) If true then start with one cooperator in the middle (default to True)
+        special_init: (bool) If true then start with one defector in the middle (default to True)
         rand_seed: (int) Which random seed to use (default to None)
 
 
@@ -65,9 +60,9 @@ class PrisonersDilemma:
                 p = [1 - self.init_coop, self.init_coop]
                 )
         else:
-            # One cooperator in the middle of defectors
-            strategies = np.zeros((self.grid_len, self.grid_len), dtype = np.int8)
-            strategies[round(self.grid_len/2), round(self.grid_len/2)] = 1
+            # One defector in the middle of defectors
+            strategies = np.ones((self.grid_len, self.grid_len), dtype = np.int8)
+            strategies[round(self.grid_len/2), round(self.grid_len/2)] = 0
 
         grid_nan = np.empty((self.grid_len, self.grid_len,))
         grid_nan[:] = np.nan
@@ -93,18 +88,21 @@ class PrisonersDilemma:
         elif ((player_1_strategy == 1) & (player_2_strategy == 0)):
             player_1_payoff = self.payoffs['s']
             player_2_payoff = self.payoffs['t']
-        else:
+        elif ((player_1_strategy == 1) & (player_2_strategy == 1)):
             player_1_payoff = self.payoffs['r']
             player_2_payoff = self.payoffs['r']
+        else:
+            print("Error - player strategies are not 1 or 0")
 
         return player_1_payoff, player_2_payoff
 
-    def get_neighbour_strategies(self, strategies):
+
+    def get_neighbour_qualities(self, player_qualities):
     
-        down_neighbour = np.roll(strategies, -1, axis=0) # down
-        up_neighbour = np.roll(strategies, 1, axis=0) # up
-        left_neighbour = np.roll(strategies, -1, axis=1) # left
-        right_neighbour = np.roll(strategies, 1, axis=1) # right
+        down_neighbour = np.roll(player_qualities, -1, axis=0) # down
+        up_neighbour = np.roll(player_qualities, 1, axis=0) # up
+        left_neighbour = np.roll(player_qualities, -1, axis=1) # left
+        right_neighbour = np.roll(player_qualities, 1, axis=1) # right
         
         nw_neighbour = np.roll(up_neighbour, -1, axis=1) # north west
         ne_neighbour = np.roll(up_neighbour, 1, axis=1) # north east
@@ -113,22 +111,6 @@ class PrisonersDilemma:
         
         return (down_neighbour, up_neighbour, left_neighbour, right_neighbour,
                 nw_neighbour, ne_neighbour, sw_neighbour, se_neighbour)
-
-    def get_neighbour_payoffs(self, fitnesses):
-    
-        down_neighbour_payoff = np.roll(fitnesses, -1, axis=0) # down
-        up_neighbour_payoff = np.roll(fitnesses, 1, axis=0) # up
-        left_neighbour_payoff = np.roll(fitnesses, -1, axis=1) # left
-        right_neighbour_payoff = np.roll(fitnesses, 1, axis=1) # right
-        
-        nw_neighbour_payoff = np.roll(up_neighbour_payoff, -1, axis=0) # nw
-        ne_neighbour_payoff = np.roll(up_neighbour_payoff, 1, axis=0) # ne
-        sw_neighbour_payoff = np.roll(down_neighbour_payoff, -1, axis=1) # sw
-        se_neighbour_payoff = np.roll(down_neighbour_payoff, 1, axis=1) # se
-        
-        return (down_neighbour_payoff, up_neighbour_payoff, left_neighbour_payoff, right_neighbour_payoff,
-               nw_neighbour_payoff, ne_neighbour_payoff, sw_neighbour_payoff, se_neighbour_payoff)
-
 
     def get_cell_payoff(self, strategies,
                     down_neighbour,
@@ -189,7 +171,7 @@ class PrisonersDilemma:
          nw_neighbour,
          ne_neighbour,
          sw_neighbour,
-         se_neighbour) = self.get_neighbour_strategies(strategies)
+         se_neighbour) = self.get_neighbour_qualities(strategies)
 
         # Get every cell's payoff (makes no difference if row and col for loops are other way):
         for row in range(0, self.grid_len):
@@ -213,7 +195,7 @@ class PrisonersDilemma:
          nw_neighbour_payoff,
          ne_neighbour_payoff,
          sw_neighbour_payoff,
-         se_neighbour_payoff) = self.get_neighbour_payoffs(fitnesses)
+         se_neighbour_payoff) = self.get_neighbour_qualities(fitnesses)
 
 
         # Consider your neighbours and change if they do better
@@ -221,25 +203,45 @@ class PrisonersDilemma:
             for col in range(0, self.grid_len):
                 # Get previous strategy
                 old_strat = strategies[row, col]
-                # All the surrounding payoffs and your own
-                b = np.array([fitnesses[row, col],
-                              right_neighbour_payoff[row,col], left_neighbour_payoff[row,col],
-                              up_neighbour_payoff[row,col], down_neighbour_payoff[row,col],
-                              nw_neighbour_payoff[row,col],
-                              ne_neighbour_payoff[row,col],
-                              sw_neighbour_payoff[row,col],
-                              se_neighbour_payoff[row,col]])
+                # Neighbours strategies
+                neigh_strats = [
+                    right_neighbour[row, col],
+                    left_neighbour[row, col],
+                    up_neighbour_payoff[row, col],
+                    down_neighbour_payoff[row, col],
+                    nw_neighbour[row, col],
+                    ne_neighbour[row, col],
+                    sw_neighbour[row, col],
+                    se_neighbour[row, col]]
+                # If all the neighbours have the same strategy as you, don't do anything
+                if ((old_strat==neigh_strats[0]) and (len(set(neigh_strats))==1)):
+                    strategies[row, col] = old_strat
+                else:
+                    # All the surrounding payoffs and your own
+                    b = np.array([right_neighbour_payoff[row,col], left_neighbour_payoff[row,col],
+                                  up_neighbour_payoff[row,col], down_neighbour_payoff[row,col],
+                                  nw_neighbour_payoff[row,col],
+                                  ne_neighbour_payoff[row,col],
+                                  sw_neighbour_payoff[row,col],
+                                  se_neighbour_payoff[row,col]])
 
-                # Get the index of the highest
-                best_index = np.random.choice(np.flatnonzero(b == b.max())) # if the same pick one randomly
-                
-                # Update to the strategy of this 'best' cell
-                strategies[row, col] = [strategies[row, col],
-                                        right_neighbour[row,col], left_neighbour[row,col],
-                                        up_neighbour[row,col], down_neighbour[row,col],
-                                        nw_neighbour[row,col], ne_neighbour[row,col],
-                                        sw_neighbour[row,col], se_neighbour[row,col]][best_index]
-                
+                    if fitnesses[row, col] >= b.max():
+                        strategies[row, col] = old_strat
+                    else:
+                        # TO DO: if there is a higher fitness
+                        # then it'll be from the other strategy.
+                        # since there cant be a tie when the strat is the same
+                        # So you can just pick the opposite rather than this index stuff
+
+                        # Get the index of the highest
+                        best_index = np.random.choice(np.flatnonzero(b == b.max())) # if the same pick one randomly
+                        
+                        # Update to the strategy of this 'best' cell
+                        strategies[row, col] = [right_neighbour[row,col], left_neighbour[row,col],
+                                                up_neighbour[row,col], down_neighbour[row,col],
+                                                nw_neighbour[row,col], ne_neighbour[row,col],
+                                                sw_neighbour[row,col], se_neighbour[row,col]][best_index]
+
                 # Get colour matrix
                 changes[row, col] = self.get_strategy_change_code(old_strat, strategies[row, col])
 
@@ -262,52 +264,9 @@ class PrisonersDilemma:
             strategies_all.append(strategies.copy())
             changes_all.append(changes.copy())
 
+            if len(set(np.array(strategies_all).flatten()))==1:
+                print("All strategies the same, stopping")
+                return strategies_all, changes_all
+
         return strategies_all, changes_all
-
-    def save_animation(self, changes_all, videoname):
-
-        print("Running and saving animation")
-        # 0 = stayed as D (red)
-        # 1 = stayed as C (blue)
-        # 2 = changed from D to C (green)
-        # 3 = changed from C to D (yellow)
-            
-        cm = LinearSegmentedColormap.from_list("coopcols", ["red", "blue", "green", "yellow"], N= 4)
-
-        def animate(i):
-            #fig, ax = plt.subplots()
-            ax.imshow(changes_all[i], cmap = cm, vmin=0, vmax=3)
-            return fig, ax
-
-        # Make video
-        Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=1, metadata=dict(artist='Me'), bitrate=1800)
-
-        fig, ax = plt.subplots(figsize=(plot_size_n, plot_size_n))
-        plt.axis('off')
-        anim = animation.FuncAnimation(fig, animate, frames=num_frames, blit=False)
-
-
-        anim.save('videos/' + videoname)
-
-
-
-if __name__ == '__main__':
-
-    payoffs = {'t': 1.3, 'r': 1, 'p': 0.5, 's': 0.1}
-    grid_len = 100
-    init_coop = 0.5
-    num_iterations = 100
-    special_init = False
-    plot_size_n = 5 # Size of video
-    num_frames = num_iterations
-
-    prd = PrisonersDilemma(payoffs, grid_len, init_coop, num_iterations, special_init)
-
-    strategies_all, changes_all = prd.run_simulation()
-
-    videoname = "test_long.mp4"
-    prd.save_animation(changes_all, videoname)
-
-    
 
