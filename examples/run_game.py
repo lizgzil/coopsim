@@ -1,8 +1,7 @@
 from argparse import ArgumentParser
-import sys
-sys.path.append('../')
-from coopsim.coopsim.prisoners_dilemma import PrisonersDilemma
-from coopsim.coopsim.visualise import save_animation
+
+from coopsim.prisoners_dilemma import PrisonersDilemma
+from coopsim.visualise import save_animation
 
 game_configs = {
     0: {

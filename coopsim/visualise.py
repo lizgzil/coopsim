@@ -1,3 +1,8 @@
+import matplotlib.pyplot as plt
+from matplotlib import colors
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.animation as animation
+
 def save_animation(changes_all, videoname, plot_size_n):
 
     print("Running and saving animation")

@@ -1,11 +1,6 @@
 import numpy as np
 from numpy import random
 
-import matplotlib.pyplot as plt
-from matplotlib import colors
-from matplotlib.colors import LinearSegmentedColormap
-import matplotlib.animation as animation
-
 class PrisonersDilemma:
 
     """

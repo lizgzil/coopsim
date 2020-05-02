@@ -19,7 +19,7 @@ brew install ffmpeg
 To run the spatial prisoner's dilemma and create a video run:
 
 ```
-python examples/run_game --game_config_num 0 --grid_len 100 --num_iterations 100
+python examples/run_game.py --game_config_num 0 --grid_len 100 --num_iterations 100
 ```
 
 There are 3 versions of the game's parameters in this example:
