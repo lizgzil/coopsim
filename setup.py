@@ -7,7 +7,7 @@ with open("README.md", "r") as f:
 
 setuptools.setup(
     name="Cooperation Simulation",
-    version="",
+    version="0.1.0",
     author="Liz Gallagher",
     author_email="lizgzil@hotmail.com",
     description="Run a prisoner's dilemma game",
